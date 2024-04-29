@@ -30,8 +30,10 @@ using namespace std;
 int buffsize, filesize, uid, gid;
 string searchStr; // String to be grep'd
 thread workers[5]; // One thread per stage
+string doneToken = "done"; // Token to let each stage know they're finished
 
 /* The four buffers */
+// See buffer.h and buffer.cpp for implementation details
 producerConsumer::buffer *buff1;
 producerConsumer::buffer *buff2;
 producerConsumer::buffer *buff3;
@@ -114,6 +116,24 @@ int main(int argc, char** argv) {
     searchStr = argv[5];
 
     // An exception will be thrown if the buffsize, filesize, uid, or gid are not integers
+
+    /* Create the worker threads */
+    workers[0] = thread(acquireFilenames); // Stage 1 worker
+    workers[1] = thread(fileFilter); // Stage 2 worker
+    workers[2] = thread(lineGeneration); // Stage 3 worker
+    workers[3] = thread(lineFilter); // Stage 4 worker
+    workers[4] = thread(output); // Stage 5 worker
+
+    /* Wait for all threads to terminate */
+    for(int i = 0; i < 5 ; i++) {
+        workers[i].join();
+    }
+
+    /* Delete all buffers */
+    delete(buff1);
+    delete(buff2);
+    delete(buff3);
+    delete(buff4);
 
     return 0;
 }
