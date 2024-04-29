@@ -27,7 +27,7 @@ using namespace std;
 
 
 /* Declaring global variables */
-int buffsize, filesize, uid, gid;
+int buffsize, filesize, uid, gid; // Info for the filter function
 string searchStr; // String to be grep'd
 thread workers[5]; // One thread per stage
 string doneToken = "done"; // Token to let each stage know they're finished
