@@ -1,19 +1,20 @@
 CC = g++
 CCFLAGS = -g -std=c++11
 INCLUDES =
-# LIBRARIES = -lboost_system -lboost_thread -lpthread -lrt 
-LIBRARIES = -lpthread
-EXECUTABLES = producer-consumer
+LIBRARIES = -lboost_system -lboost_thread -lpthread -lrt 
+EXECUTABLES = pipegrep
 
-producer-consumer: producer-consumer.o
-	$(CC) $(CCFLAGS) $(INCLUDES) -o producer-consumer producer-consumer.o $(LIBRARIES)
+pipegrep: pipegrep.o buffer.o
+	$(CC) $(CCFLAGS) $(INCLUDES) -o pipegrep pipegrep.o buffer.o $(LIBRARIES)
+
+buffer.o: buffer.h
 
 # Rule for generating .o file from .cpp file
 %.o: %.cpp
 	$(CC) $(CCFLAGS) $(INCLUDES) -c $^ 
 
 # All files to be generated
-all: producer-consumer
+all: pipegrep
 
 # Clean the directory
 clean: 
