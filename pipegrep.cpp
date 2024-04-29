@@ -117,6 +117,18 @@ int main(int argc, char** argv) {
 
     // An exception will be thrown if the buffsize, filesize, uid, or gid are not integers
 
+    // Verify the arguments before proceeding
+    if (buffsize <= 0 || filesize < -1 || uid < -1 || gid < -1 || searchStr.empty()) {
+        cerr << "Invalid arguments provided. Usage: ./pipegrep <buffsize> <filesize> <uid> <gid> <string>" << endl;
+        exit(1);
+    }
+
+    /* Initialize the buffers */
+    buff1 = new producerConsumer::buffer(buffsize);
+    buff2 = new producerConsumer::buffer(buffsize);
+    buff3 = new producerConsumer::buffer(buffsize);
+    buff4 = new producerConsumer::buffer(buffsize);
+
     /* Create the worker threads */
     workers[0] = thread(acquireFilenames); // Stage 1 worker
     workers[1] = thread(fileFilter); // Stage 2 worker
