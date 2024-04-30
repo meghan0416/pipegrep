@@ -19,6 +19,10 @@
 #include <iostream>
 #include <thread>
 #include <string>
+#include <dirent.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "buffer.h"
 
@@ -47,7 +51,23 @@ producerConsumer::buffer *buff4;
  * Post-condition: Buff1 contains all current directory filenames plus a "done" token to be passed along the stages.
  * */
 void acquireFilenames() {
-
+    DIR *thisDirectory; // A pointer to the current directory
+    struct dirent *entry; // A pointer to the current directory entry
+    struct stat entry_info;
+    if((thisDirectory = opendir("./")) != NULL) { // Try to open the current directory
+        while((entry = readdir(thisDirectory)) != NULL) { // Read all entries until none left
+            lstat(entry->d_name, &entry_info); // To get information about the file type
+            /* Only want to add regular files to the buffer */
+            if((entry_info.st_mode & S_IFMT) == S_IFREG) {  // If it's a regular file, add to the buffer
+                buff1->add(entry->d_name);
+            }
+        }
+        buff1->add(doneToken); // Done adding files so add the done token
+    }
+    else {
+        cerr << "Unable to open the current directory." << endl;
+        exit(EXIT_FAILURE);
+    }
 }
 
 
@@ -60,7 +80,27 @@ void acquireFilenames() {
  * Post-condition: Buff2 contains all filenames to be searched based on the provided arguments, and Buff1 is empty.
  * */
 void fileFilter() {
-
+    /* Temporary holders for processing */
+    string filename;
+    struct stat file_info;
+    /* Determine which items need to be checked */
+    bool filterSize = (filesize == -1);
+    bool filterUID = (uid == -1);
+    bool filterGID = (gid == -1);
+    while((filename = buff1->remove()) != doneToken) { // Read the next filename until done
+        lstat(filename.c_str(), &file_info); // Get info about the current file
+        if(filterSize) {
+            if(file_info.st_size <= filesize) continue; // Skip files less than or equal to given filesize
+        }
+        if(filterUID) {
+            if(file_info.st_uid != uid) continue; // Skip files not owned by the given uid
+        }
+        if(filterGID) {
+            if(file_info.st_gid != gid) continue; // Skip files not owned by the given gid
+        }
+        buff2->add(filename); // Add files that make it to this point
+    }
+    buff2->add(doneToken); // Finished, add done token
 }
 
 
@@ -105,7 +145,7 @@ void output() {
 int main(int argc, char** argv) {
     if (argc < 6) {
         cerr << "Too few arguments provided. Usage: ./pipegrep <buffsize> <filesize> <uid> <gid> <string>" << endl;
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     // Read the arguments provided by the user and assign
@@ -120,7 +160,7 @@ int main(int argc, char** argv) {
     // Verify the arguments before proceeding
     if (buffsize <= 0 || filesize < -1 || uid < -1 || gid < -1 || searchStr.empty()) {
         cerr << "Invalid arguments provided. Usage: ./pipegrep <buffsize> <filesize> <uid> <gid> <string>" << endl;
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     /* Initialize the buffers */
@@ -147,5 +187,5 @@ int main(int argc, char** argv) {
     delete(buff3);
     delete(buff4);
 
-    return 0;
+    return EXIT_SUCCESS;
 }
