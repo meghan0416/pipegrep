@@ -61,7 +61,8 @@ void acquireFilenames() {
             lstat(entry->d_name, &entry_info); // To get information about the file type
             /* Only want to add regular files to the buffer */
             if((entry_info.st_mode & S_IFMT) == S_IFREG) {  // If it's a regular file, add to the buffer
-                buff1->add(entry->d_name);
+                buff1->add(entry->d_name); // Add to buffer
+                cout << "Added: " << entry->d_name << endl;
             }
         }
         buff1->add(doneToken); // Done adding files so add the done token
@@ -87,9 +88,9 @@ void fileFilter() {
     string filename;
     struct stat file_info;
     /* Determine which items need to be checked */
-    bool filterSize = (filesize == -1);
-    bool filterUID = (uid == -1);
-    bool filterGID = (gid == -1);
+    bool filterSize = (filesize != -1);
+    bool filterUID = (uid != -1);
+    bool filterGID = (gid != -1);
     while((filename = buff1->remove()) != doneToken) { // Read the next filename until done
         lstat(filename.c_str(), &file_info); // Get info about the current file
         if(filterSize) {
@@ -103,6 +104,7 @@ void fileFilter() {
         }
         buff2->add(filename); // Add files that make it to this point
     }
+    cout << "Finished filtering" << endl;
     buff2->add(doneToken); // Finished, add done token
     return;
 }
@@ -119,21 +121,17 @@ void lineGeneration() {
     ifstream file; // for holding the next file after opening
     string filename; // for holding the name of the current file
     string line; // for holding the current line
-    char* printFormat; // for holding the line that tells the filename and line number
-    int lineCount; // for holding the current line number
+
     while((filename = buff2->remove())!= doneToken) { // Read the next file until done
         file.open(filename.c_str()); // Open the next file
         if(!file.is_open()) { // Clean exit if unable to open the file
             cerr << "Unable to read file" << endl;
             exit(EXIT_FAILURE);
         }
-        lineCount = 1; // Reset the line count
         while(getline(file, line)) { // Read the file line by line until EOF
-            sprintf(printFormat, "%s (%d): ", filename, lineCount); // Create the formatted line head
-            strcat(printFormat, line.c_str()); // Comebine with the line read
-            buff3->add(printFormat); // Add it to the buffer
-            lineCount++; // Increment the line count
+            buff3->add(line); // Add it to the buffer
         }
+        cout << "Finished adding lines from " << filename << endl;
     }
     buff3->add(doneToken); // Finished, add done token
     return;
@@ -150,11 +148,14 @@ void lineGeneration() {
  * */
 void lineFilter() {
     string line; // for holding the entire current line
+    cout << "Search string is " << searchStr << endl;
     while((line = buff3->remove()) != doneToken) { // Get the next line until finished
-        if(strstr(line.c_str(), searchStr.c_str()) != nullptr) { // If the string is found in the current line
+        if(line.find(searchStr) != string::npos) { // If the string is found in the current line
+            cout << "Line contained search string" << endl;
             buff4->add(line); // Add it to the next buffer
         }
     }
+    cout << "Finished reading lines" << endl;
     buff4->add(doneToken); // Finished, add done token
     return;
 }
@@ -193,6 +194,7 @@ int main(int argc, char** argv) {
     gid = stoi(argv[4]);
     searchStr = argv[5];
 
+
     // An exception will be thrown if the buffsize, filesize, uid, or gid are not integers
 
     // Verify the arguments before proceeding
@@ -220,10 +222,10 @@ int main(int argc, char** argv) {
     }
 
     /* Delete all buffers */
-    delete(buff1);
-    delete(buff2);
-    delete(buff3);
-    delete(buff4);
+    buff1 = NULL;
+    buff2 = NULL;
+    buff3 = NULL;
+    buff4 = NULL;
 
     return EXIT_SUCCESS;
 }

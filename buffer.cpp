@@ -8,6 +8,7 @@
  */
 
 #include "buffer.h"
+#include <iostream>
 
 namespace producerConsumer {
     /*
@@ -21,11 +22,9 @@ namespace producerConsumer {
         tail = 0;
         count = 0;
         capacity = bufSize; // Set the buffer capacity
-        buff[capacity];
-
-        /* Initialize the buffer with empty strings */
-        for(int i = 0; i < capacity; ++i )
-        {
+        buff = new std::string[capacity];
+        /* Fill the buffer with empty strings */
+        for(int i = 0; i < capacity; i++) {
             buff[i] = "";
         }
     }
