@@ -62,9 +62,9 @@ void acquireFilenames() {
             /* Only want to add regular files to the buffer */
             if((entry_info.st_mode & S_IFMT) == S_IFREG) {  // If it's a regular file, add to the buffer
                 buff1->add(entry->d_name); // Add to buffer
-                cout << "Added: " << entry->d_name << endl;
             }
         }
+        //closedir(thisDirectory); // Close the directory
         buff1->add(doneToken); // Done adding files so add the done token
     }
     else {
@@ -104,7 +104,6 @@ void fileFilter() {
         }
         buff2->add(filename); // Add files that make it to this point
     }
-    cout << "Finished filtering" << endl;
     buff2->add(doneToken); // Finished, add done token
     return;
 }
@@ -129,9 +128,10 @@ void lineGeneration() {
             exit(EXIT_FAILURE);
         }
         while(getline(file, line)) { // Read the file line by line until EOF
-            buff3->add(line); // Add it to the buffer
+            if(strlen(line.c_str()) < 50) buff3->add(line); // Add it to the buffer if not insanely long
         }
-        cout << "Finished adding lines from " << filename << endl;
+        file.close(); // Remember to close and clear to reuse the ifstream
+        file.clear();
     }
     buff3->add(doneToken); // Finished, add done token
     return;
@@ -148,14 +148,11 @@ void lineGeneration() {
  * */
 void lineFilter() {
     string line; // for holding the entire current line
-    cout << "Search string is " << searchStr << endl;
     while((line = buff3->remove()) != doneToken) { // Get the next line until finished
         if(line.find(searchStr) != string::npos) { // If the string is found in the current line
-            cout << "Line contained search string" << endl;
             buff4->add(line); // Add it to the next buffer
         }
     }
-    cout << "Finished reading lines" << endl;
     buff4->add(doneToken); // Finished, add done token
     return;
 }
