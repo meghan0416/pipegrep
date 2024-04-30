@@ -17,8 +17,10 @@
  * */
 
 #include <iostream>
+#include <fstream>
 #include <thread>
-#include <string>
+#include <string.h>
+#include <cstdio>
 #include <dirent.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -68,6 +70,7 @@ void acquireFilenames() {
         cerr << "Unable to open the current directory." << endl;
         exit(EXIT_FAILURE);
     }
+    return;
 }
 
 
@@ -101,6 +104,7 @@ void fileFilter() {
         buff2->add(filename); // Add files that make it to this point
     }
     buff2->add(doneToken); // Finished, add done token
+    return;
 }
 
 
@@ -112,7 +116,27 @@ void fileFilter() {
  * Post-condition: Buff3 contains lines from each of the filtered files, and Buff2 is empty.
  * */
 void lineGeneration() {
-
+    ifstream file; // for holding the next file after opening
+    string filename; // for holding the name of the current file
+    string line; // for holding the current line
+    char* printFormat; // for holding the line that tells the filename and line number
+    int lineCount; // for holding the current line number
+    while((filename = buff2->remove())!= doneToken) { // Read the next file until done
+        file.open(filename.c_str()); // Open the next file
+        if(!file.is_open()) { // Clean exit if unable to open the file
+            cerr << "Unable to read file" << endl;
+            exit(EXIT_FAILURE);
+        }
+        lineCount = 1; // Reset the line count
+        while(getline(file, line)) { // Read the file line by line until EOF
+            sprintf(printFormat, "%s (%d): ", filename, lineCount); // Create the formatted line head
+            strcat(printFormat, line.c_str()); // Comebine with the line read
+            buff3->add(printFormat); // Add it to the buffer
+            lineCount++; // Increment the line count
+        }
+    }
+    buff3->add(doneToken); // Finished, add done token
+    return;
 }
 
 
@@ -125,7 +149,14 @@ void lineGeneration() {
  * Post-condition: Buff4 contains lines that contain (string), and Buff3 is empty.
  * */
 void lineFilter() {
-
+    string line; // for holding the entire current line
+    while((line = buff3->remove()) != doneToken) { // Get the next line until finished
+        if(strstr(line.c_str(), searchStr.c_str()) != nullptr) { // If the string is found in the current line
+            buff4->add(line); // Add it to the next buffer
+        }
+    }
+    buff4->add(doneToken); // Finished, add done token
+    return;
 }
 
 
@@ -137,7 +168,14 @@ void lineFilter() {
  * Post-condition: Buff4 is empty.
  * */
 void output() {
-
+    string line; // for holding the line to be printed
+    int totalFound = 0; // For holding the number of matches
+    while((line = buff4->remove()) != doneToken) {
+        cout << line << endl; // Print the line
+        totalFound++; // Increment total found
+    }
+    cout << "***** You found " << totalFound << " matches *****" << endl;
+    return;
 }
 
 
