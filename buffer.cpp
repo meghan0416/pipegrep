@@ -96,8 +96,6 @@ namespace producerConsumer {
         buff[head] = ""; // Replace with the empty string
         head = (head + 1) % capacity; // Adjust the head
         --count; // Decrement the count
-
-        //assert( item != "" ); // Error if the removed item was the empty string
  
         /* Wake up a producer */
         notFull.notify_one();
