@@ -18,6 +18,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <thread>
 #include <string.h>
 #include <cstdio>
@@ -114,7 +115,7 @@ void fileFilter() {
  * It checks if the file indicated by filename is a binary file (i.e. an executable or .o file)
  * so that it may be skipped by the line generation stage.
  * 
- * param: filename -- The string that contains the path from the current directory to the file.
+ * param: filename -- The string that contains the path to the file, or just the filename if in the current directory.
  * return: true if the file is a binary file. false if it is not a binary file.
  * */
 bool isBinaryFile(string filename) {
@@ -133,9 +134,10 @@ bool isBinaryFile(string filename) {
         charCount++; // increment count
     }
     file.close(); // Close the file
-    float ratio = (float)nonAsciiCount / (float)charCount;
+
+    float ratio = (float)nonAsciiCount / (float)charCount; // Calculate ratio of non-ascii characters read
     if(ratio > 0.01) return true; // If more than 1% non-ascii characters were read, return true
-    return false; // Otherwise return true
+    return false; // Otherwise return false
 }
 
 /* 
@@ -148,7 +150,9 @@ bool isBinaryFile(string filename) {
 void lineGeneration() {
     ifstream file; // for holding the next file after opening
     string filename; // for holding the name of the current file
-    string line; // for holding the current line
+    string line; // for holding the current line read from the file
+    int lineNumber = 1; // for holding the current line in the current file
+    stringstream lineFormatted; // for formatting the filename + line number + line together
 
     while((filename = buff2->remove())!= doneToken) { // Read the next file until done
         if(isBinaryFile(filename)) continue; // Check if it's a binary file -- if so, skip
@@ -158,8 +162,13 @@ void lineGeneration() {
             exit(EXIT_FAILURE);
         }
         while(getline(file, line)) { // Read the file line by line until EOF
-            buff3->add(line); // Add it to the buffer
+            lineFormatted << "./" << filename << " (" << lineNumber << "): " << line; // Format the line
+            buff3->add(lineFormatted.str()); // Add it to the buffer
+            lineNumber++; // Increment the line number
+            lineFormatted.clear(); // Clear the stream
+            lineFormatted.str(""); // Reset to empty string
         }
+        lineNumber = 1; // Reset the line number for the next file
         file.close(); // Remember to close and clear to reuse the ifstream
         file.clear();
     }
@@ -178,8 +187,18 @@ void lineGeneration() {
  * */
 void lineFilter() {
     string line; // for holding the entire current line
+    int lineLength; // Used for parsing the string header when searching
+    char* lineArray; // Used for parsing the string header when searching
+    string lineHeader; // Temporary holder for the parsed string header
+    string lineSearch; // Temporary holder for the rest of the string to be searched
     while((line = buff3->remove()) != doneToken) { // Get the next line until finished
-        if(line.find(searchStr) != string::npos) { // If the string is found in the current line
+        /* Temporarily convert the current line to a char array to parse it */
+        lineLength = line.length();
+        lineArray = new char[lineLength + 1]; // Add 1 for terminator
+        strcpy(lineArray, line.c_str()); // Initialize the character array with current line
+        lineHeader = strtok(lineArray, ":"); // Throw away the header when searching
+        lineSearch = strtok(NULL, "\n"); // Use only the part after the first colon for searching
+        if(lineSearch.find(searchStr) != string::npos) { // If the string is found in the current line
             buff4->add(line); // Add it to the next buffer
         }
     }
