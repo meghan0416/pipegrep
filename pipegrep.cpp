@@ -110,6 +110,35 @@ void fileFilter() {
 
 
 /* 
+ * This function is a helper for Stage 3 of the grep search. 
+ * It checks if the file indicated by filename is a binary file (i.e. an executable or .o file)
+ * so that it may be skipped by the line generation stage.
+ * 
+ * param: filename -- The string that contains the path from the current directory to the file.
+ * return: true if the file is a binary file. false if it is not a binary file.
+ * */
+bool isBinaryFile(string filename) {
+    int charCount = 0; // Number of bytes read
+    int nonAsciiCount = 0; // Number of non-ascii bytes read
+    char c; // Holder for next byte
+    ifstream file; 
+    file.open(filename.c_str()); // Open the file specified by filename
+    if(!file.is_open()) { // Clean exit if unable to open file
+        cerr << "Unable to open file" << endl;
+        exit(EXIT_FAILURE);
+    }
+
+    while(charCount < 300 && file.get(c)) { // Read until 100 bytes or no more to read
+        if(!isascii(c)) nonAsciiCount++; // Increment non-ascii char count
+        charCount++; // increment count
+    }
+    file.close(); // Close the file
+    float ratio = (float)nonAsciiCount / (float)charCount;
+    if(ratio > 0.01) return true; // If more than 1% non-ascii characters were read, return true
+    return false; // Otherwise return true
+}
+
+/* 
  * This function is Stage 3 of the grep search. 
  * The thread in this stage reads each filename from buff2 and adds the lines in this file to buff3.
  * 
@@ -122,13 +151,14 @@ void lineGeneration() {
     string line; // for holding the current line
 
     while((filename = buff2->remove())!= doneToken) { // Read the next file until done
+        if(isBinaryFile(filename)) continue; // Check if it's a binary file -- if so, skip
         file.open(filename.c_str()); // Open the next file
         if(!file.is_open()) { // Clean exit if unable to open the file
-            cerr << "Unable to read file" << endl;
+            cerr << "Unable to open file" << endl;
             exit(EXIT_FAILURE);
         }
         while(getline(file, line)) { // Read the file line by line until EOF
-            if(strlen(line.c_str()) < 50) buff3->add(line); // Add it to the buffer if not insanely long
+            buff3->add(line); // Add it to the buffer
         }
         file.close(); // Remember to close and clear to reuse the ifstream
         file.clear();
