@@ -1,15 +1,13 @@
-A README file that describes 
-(1) what you got working, 
-(2) a description of your critical sections, 
-(3) the buffer size that gave optimal performance for 30 or more files, 
-(4) tell me in which stage you would add an additional thread to improve performance and why you chose that stage, and 
-(5) Any bugs in your code.
-
 Authors: Meghan Grayson and Vaishnavi Karaguppi
+Date: May 3, 2024
+
+###############################################
 
 (1) What we got working:
 
 The program works fully as described by the project description, but it does not do the bonus requirement of performing a recursive search within the subdirectories.
+
+###############################################
 
 (2) A description of the critical sections:
 
@@ -47,15 +45,36 @@ head = (head + 1) % capacity; // Adjust the head
 /* Wake up a producer */
 notFull.notify_one();
 
+###############################################
+
 (3) The buffer size that gave optimal performance for 30 or more files:
 
-By using the time system function, a buffer size of around 50 gave the optimal performance.
+By using the time system function, the average time for a search of 30 or more files resulted in the below times:
+
+BUFFSIZE	NUMBER OF TRIALS	AVG REAL TIME (sec)
+5			10			0.4145
+10			10			0.4062
+50			10			0.4224
+100			10			0.3991
+500			10			0.3960
+1000			10			0.4013
+3000			10			0.4054
+5000			10			0.4038
+10000			10			0.4001
+
+Based on these results, a buffer size around 100 or 500 showed optimal performance. Past 1000, performance is about the same as a buffer of size 10, and a buffer below 10 may have more significant performance drop.
+
+###############################################
 
 (4) Which stage would we add an additional thread to improve performance and why:
 
 The fourth stage has the worst time complexity as it's performing a search through every line contained in buff3, so this would be the best stage to add an additional thread to improve performance. Other stages are linear time complexity since they are generally just adding sequentially to a buffer. In stage 4, the search time for one line is complexity O(NxM) where N is the length of the entire line and M is the length of the substring. This multiplied by the total number of lines generated from stage 3 makes for an inefficient search time, becoming a bottleneck for the program. Performing the search on items from buff3 in parallel would improve overall performance the most out of all stages. 
 
+###############################################
+
 (5) Any bugs:
 
-There are no known bugs in the code.
+There are no known bugs in the code. 
+
+One area to improve would be to make the buffer able to accept different data types rather than just strings, so that the filename and line number can be passed with the line to the buffers in a struct so that the formatting for printing can be done in stage 5 rather than stage 3. Due to time constraints this refactoring was not possible.
 
